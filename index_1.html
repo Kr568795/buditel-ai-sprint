@@ -1,0 +1,660 @@
+<!DOCTYPE html><html lang="bg"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Buditel AI Sprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';document.head.appendChild(s)"></script>
+<style>
+  /* Layout: three tabs — the event site (hero with live countdown, wizard registration, boarding-pass ticket, AI team match),
+     the post-event survey with live results, and the organiser control room. Caution-tape yellow is the one loud accent. */
+  :root {
+    --paper: #f4f5f8;
+    --card: #ffffff;
+    --ink: #13151d;
+    --ink-2: #1d2030;
+    --soft: #5c6273;
+    --line: #dfe2ea;
+    --tape: #ffd23f;
+    --cobalt: #2b45e0;
+    --ok: #1f9d5c;
+    --bad: #d6403a;
+    --f-display: 'Rubik', 'Arial Black', sans-serif;
+    --f-body: 'Onest', 'Segoe UI', system-ui, sans-serif;
+    --f-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { background: var(--paper); }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15.5px/1.55 var(--f-body); }
+  .wrap { max-width: 1140px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 48px; display: grid; gap: 20px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
+  .tab-page { display: grid; gap: 20px; }
+
+  /* top bar */
+  .bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+  .brand { font: 800 15px var(--f-display); letter-spacing: .02em; display: flex; gap: 8px; align-items: center; }
+  .brand i { width: 14px; height: 14px; background: var(--tape); border: 2px solid var(--ink); display: inline-block; transform: rotate(45deg); }
+  .tabs { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 4px; flex-wrap: wrap; }
+  .tabs button { border: 0; background: transparent; padding: 8px 14px; border-radius: 7px; font-weight: 600; font-size: 14px; color: var(--soft); }
+  .tabs button[aria-selected="true"] { background: var(--ink); color: #fff; }
+
+  /* hero */
+  .hero { background: var(--ink); color: #fff; border-radius: 18px; padding: clamp(22px, 4vw, 40px); padding-bottom: 70px; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 28px; position: relative; overflow: hidden; }
+  .hero::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px); background-size: 22px 22px; }
+  .tape { position: absolute; left: -5%; right: -5%; height: 34px; bottom: 16px; transform: rotate(-2deg); background: var(--tape); overflow: hidden; display: flex; align-items: center; border-block: 2px solid var(--ink); z-index: 1; }
+  .tape .track { display: flex; gap: 0; white-space: nowrap; animation: slide 28s linear infinite; font: 800 14px var(--f-display); letter-spacing: .08em; color: var(--ink); }
+  .tape .track span { padding-inline: 18px; }
+  .tape .track span::after { content: "◆"; margin-left: 36px; }
+  @keyframes slide { to { transform: translateX(-50%); } }
+  .hero > *:not(.tape) { position: relative; z-index: 2; }
+  .kicker { font: 700 12px var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--tape); }
+  .hero h1 { margin: 10px 0 12px; font: 800 clamp(40px, 7.4vw, 78px)/0.95 var(--f-display); letter-spacing: -.02em; text-wrap: balance; }
+  .hero h1 span { color: var(--ink); background: var(--tape); padding: 0 .12em; border-radius: 6px; display: inline-block; transform: rotate(-3deg); }
+  .hero p { margin: 0 0 18px; color: #c9ccd8; max-width: 52ch; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .facts span { border: 1px solid #3a3e4f; border-radius: 999px; padding: 5px 12px; font-size: 13.5px; }
+  .count { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 22px; max-width: 420px; }
+  .count div { background: var(--ink-2); border: 1px solid #343849; border-radius: 10px; padding: 8px 6px; text-align: center; }
+  .count b { display: block; font: 800 30px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+  .count small { font: 600 10.5px var(--f-mono); letter-spacing: .12em; color: #9aa0b4; text-transform: uppercase; }
+  .seats { align-self: start; background: var(--ink-2); border: 1px solid #343849; border-radius: 14px; padding: 18px; display: grid; gap: 10px; }
+  .seats .n { font: 800 58px/1 var(--f-display); color: var(--tape); font-variant-numeric: tabular-nums; }
+  .seats .t { color: #c9ccd8; font-size: 14px; }
+  .meter { height: 10px; border-radius: 5px; background: #343849; overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--tape); border-radius: 5px; transition: width .6s; }
+  .live { border-top: 1px dashed #3a3e4f; padding-top: 10px; display: grid; gap: 4px; min-height: 52px; }
+  .live .h { font: 700 11px var(--f-mono); letter-spacing: .12em; color: var(--tape); display: flex; gap: 6px; align-items: center; }
+  .live .h i { width: 8px; height: 8px; border-radius: 50%; background: #ff5a4f; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .live .msg { font-size: 13.5px; color: #e3e5ee; transition: opacity .3s; }
+  .cta { display: inline-block; background: var(--tape); color: var(--ink); font-weight: 700; border: 2px solid var(--tape); border-radius: 10px; padding: 12px 18px; text-decoration: none; text-align: center; }
+  .cta:hover { background: transparent; color: var(--tape); }
+
+  /* program */
+  .program { display: grid; grid-template-columns: 0.6fr 2fr 1fr; gap: 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .seg { padding: 16px; display: grid; gap: 6px; align-content: start; border-right: 1px solid var(--line); position: relative; }
+  .seg:last-child { border-right: 0; }
+  .seg::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: var(--ink); }
+  .seg.mid::before { background: repeating-linear-gradient(45deg, var(--tape) 0 10px, var(--ink) 10px 20px); }
+  .seg .time { font: 700 12px var(--f-mono); color: var(--cobalt); letter-spacing: .06em; margin-top: 4px; }
+  .seg h3 { margin: 0; font: 700 18px var(--f-display); }
+  .seg p { margin: 0; color: var(--soft); font-size: 14px; }
+  .seg .dur { font: 600 11px var(--f-mono); color: var(--soft); }
+
+  /* registration wizard */
+  .reg { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; min-width: 0; }
+  .panel h2 { margin: 0 0 4px; font: 800 24px var(--f-display); }
+  .sub { margin: 0 0 16px; color: var(--soft); font-size: 14.5px; }
+  .prog { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 18px; }
+  .prog div { display: grid; gap: 6px; }
+  .prog i { height: 6px; border-radius: 3px; background: var(--line); }
+  .prog div.on i { background: var(--ink); }
+  .prog div.now i { background: repeating-linear-gradient(45deg, var(--tape) 0 6px, var(--ink) 6px 12px); }
+  .prog small { font: 600 11px var(--f-mono); color: var(--soft); letter-spacing: .04em; }
+  .prog div.on small, .prog div.now small { color: var(--ink); }
+  .stepq { display: grid; gap: 14px; }
+  .q { font: 700 20px var(--f-display); margin: 0; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  label.f { display: grid; gap: 5px; font-size: 13.5px; font-weight: 600; }
+  label.f small { font-weight: 400; color: var(--soft); }
+  input[type=text], input[type=email], select, textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 12px; background: #fff; font-size: 15px; font-weight: 400; }
+  input.err, select.err { border-color: var(--bad); }
+  .e { color: var(--bad); font-size: 12.5px; font-weight: 500; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opt { border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; background: #fff; text-align: left; display: grid; gap: 4px; }
+  .opt b { font: 700 16px var(--f-display); }
+  .opt span { font-size: 13px; color: var(--soft); }
+  .opt[aria-pressed="true"] { border-color: var(--ink); box-shadow: 4px 4px 0 var(--tape); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1.5px solid var(--line); background: #fff; border-radius: 999px; padding: 7px 13px; font-size: 14px; font-weight: 500; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+  .check input { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--ink); }
+  .nav { display: flex; gap: 10px; justify-content: space-between; margin-top: 4px; }
+  .primary { background: var(--ink); color: #fff; border: 0; border-radius: 10px; padding: 12px 20px; font-weight: 700; }
+  .primary:hover { box-shadow: 4px 4px 0 var(--tape); }
+  .ghost { background: transparent; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 16px; font-weight: 600; }
+  .review { display: grid; gap: 6px; background: var(--paper); border-radius: 12px; padding: 14px; font-size: 14.5px; }
+  .review div { display: flex; justify-content: space-between; gap: 12px; }
+  .review span { color: var(--soft); }
+  .note { color: var(--soft); font-size: 13px; margin: 0; }
+  .mail { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--paper); display: grid; gap: 8px; font-size: 14px; }
+  .mail .h { font: 600 12px var(--f-mono); color: var(--soft); }
+  .btn2 { background: var(--tape); color: var(--ink); border: 2px solid var(--ink); border-radius: 10px; padding: 10px 16px; font-weight: 700; justify-self: start; }
+
+  /* boarding-pass ticket */
+  .bpass { display: grid; grid-template-columns: minmax(0, 1fr) 150px; background: #fff; border: 2px solid var(--ink); border-radius: 16px; overflow: hidden; position: relative; transform-style: preserve-3d; transition: transform .25s; animation: print .8s cubic-bezier(.2,.8,.2,1); }
+  @keyframes print { from { transform: translateY(-16px) scale(.97); opacity: 0; } }
+  .bpass .main { padding: 16px 18px; display: grid; gap: 10px; }
+  .bpass .top { display: flex; justify-content: space-between; align-items: center; background: var(--ink); color: #fff; margin: -16px -18px 0; padding: 10px 18px; font: 700 12px var(--f-mono); letter-spacing: .12em; }
+  .bpass .top b { color: var(--tape); }
+  .bpass .who { font: 800 24px/1.1 var(--f-display); }
+  .bpass .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .bpass .grid small { display: block; font: 600 10.5px var(--f-mono); letter-spacing: .1em; color: var(--soft); text-transform: uppercase; }
+  .bpass .grid b { font: 700 15px var(--f-display); }
+  .bpass .stub { border-left: 2px dashed var(--ink); padding: 14px; display: grid; gap: 8px; place-items: center; background: #fffbea; position: relative; }
+  .bpass .stub::before, .bpass .stub::after { content: ""; position: absolute; left: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--card); border: 2px solid var(--ink); }
+  .bpass .stub::before { top: -12px; } .bpass .stub::after { bottom: -12px; }
+  .bpass .code { font: 700 15px var(--f-mono); letter-spacing: .06em; }
+  .qr { width: 112px; height: 112px; display: grid; place-items: center; font: 600 11px var(--f-mono); color: var(--soft); text-align: center; background: #fff; }
+  .qr svg { width: 100%; height: 100%; }
+  .team { margin-top: 14px; border: 1.5px solid var(--ink); border-radius: 14px; padding: 16px; display: grid; gap: 10px; background: #fff; }
+  .team .h { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .team .h b { font: 800 19px var(--f-display); }
+  .team .h small { font: 700 11px var(--f-mono); color: var(--cobalt); letter-spacing: .1em; }
+  .mates { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mate { display: flex; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px 4px 4px; font-size: 13px; }
+  .mate i { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 700 11px var(--f-mono); font-style: normal; background: var(--paper); border: 1px solid var(--line); }
+  .mate.me i { background: var(--tape); border-color: var(--ink); }
+  .cover { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .cover div { border-radius: 8px; padding: 6px 8px; font-size: 12.5px; background: var(--paper); color: var(--soft); }
+  .cover div.y { background: var(--ink); color: #fff; }
+  .side h3 { margin: 0 0 8px; font: 700 18px var(--f-display); }
+  .side ul { margin: 0; padding-left: 18px; color: var(--soft); display: grid; gap: 6px; font-size: 14.5px; }
+
+  /* survey */
+  .survey { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  .scale button { border: 1.5px solid var(--line); background: #fff; border-radius: 12px; padding: 10px 4px; display: grid; gap: 2px; place-items: center; }
+  .scale button b { font: 800 22px var(--f-display); }
+  .scale button span { font-size: 11.5px; color: var(--soft); }
+  .scale button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .scale button[aria-pressed="true"] span { color: var(--tape); }
+  .sq { display: grid; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .sq:last-of-type { border-bottom: 0; }
+  .sq > b { font-size: 15px; }
+  .res { display: grid; gap: 18px; }
+  .big { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; }
+  .big b { font: 800 56px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+  .big span { color: var(--soft); }
+  .bars { display: grid; gap: 8px; }
+  .brow { display: grid; grid-template-columns: 110px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-size: 13.5px; position: relative; }
+  .brow .b { height: 16px; background: var(--paper); border-radius: 0 4px 4px 0; position: relative; }
+  .brow .b i { display: block; height: 100%; background: var(--cobalt); border-radius: 0 4px 4px 0; transition: width .6s; min-width: 2px; }
+  .brow.you .b i { background: var(--ink); box-shadow: inset 0 -4px 0 var(--tape); }
+  .brow .v { font: 600 12.5px var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; }
+  .quote { border-left: 4px solid var(--tape); padding: 6px 12px; font-size: 14px; color: var(--ink); background: var(--paper); border-radius: 0 8px 8px 0; }
+
+  /* admin */
+  .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 2px; }
+  .stat b { font: 800 30px var(--f-display); font-variant-numeric: tabular-nums; }
+  .stat small { color: var(--soft); font-size: 13px; }
+  .stat .pill { justify-self: start; }
+  .admin { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .ring { display: flex; gap: 16px; align-items: center; }
+  .ring svg { width: 112px; height: 112px; flex: none; }
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tools input { flex: 1; min-width: 160px; }
+  .tablewrap { overflow: auto; max-height: 420px; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--paper); font: 600 11.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--soft); }
+  td.mono { font-family: var(--f-mono); font-size: 12.5px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .p-pending { background: #fff3c4; color: #7a5b00; }
+  .p-confirmed { background: #e3e8ff; color: var(--cobalt); }
+  .p-checked { background: #dcf3e6; color: var(--ok); }
+  .p-wait { background: #f1f2f6; color: var(--soft); }
+  .scanner { position: relative; height: 120px; border-radius: 12px; background: var(--ink); overflow: hidden; display: grid; place-items: center; }
+  .scanner .frame { width: 84px; height: 84px; border: 3px solid var(--tape); border-radius: 10px; opacity: .9; }
+  .scanner .laser { position: absolute; left: 10%; right: 10%; height: 2px; background: #ff5a4f; box-shadow: 0 0 10px #ff5a4f; top: 20%; animation: laser 1.6s ease-in-out infinite alternate; }
+  @keyframes laser { to { top: 80%; } }
+  .scanres { border-radius: 10px; padding: 12px; font-weight: 600; font-size: 14.5px; }
+  .scanres.ok { background: #dcf3e6; color: #11653a; }
+  .scanres.warn { background: #fff3c4; color: #6b5000; }
+  .scanres.bad { background: #fde3e1; color: #9c2621; }
+  .tests { display: grid; gap: 8px; }
+  .test { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; font-size: 14px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .test .r { font: 700 12px var(--f-mono); padding: 2px 7px; border-radius: 6px; }
+  .test .r.pass { background: #dcf3e6; color: var(--ok); }
+  .test .r.fail { background: #fde3e1; color: var(--bad); }
+  .test small { display: block; color: var(--soft); font-size: 12.5px; }
+  .tip { position: fixed; pointer-events: none; background: var(--ink); color: #fff; font-size: 12.5px; padding: 6px 9px; border-radius: 6px; z-index: 50; }
+  .foot { color: var(--soft); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 12px; margin: 0; }
+
+  @media (max-width: 900px) {
+    .hero, .reg, .admin, .survey, .charts { grid-template-columns: 1fr; }
+    .program { grid-template-columns: 1fr; }
+    .seg { border-right: 0; border-bottom: 1px solid var(--line); }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 520px) {
+    .row, .cards { grid-template-columns: 1fr; }
+    .bpass { grid-template-columns: 1fr; }
+    .bpass .stub { border-left: 0; border-top: 2px dashed var(--ink); }
+    .bpass .stub::before, .bpass .stub::after { display: none; }
+    .cover { grid-template-columns: 1fr 1fr; }
+    .scale span { display: none; }
+    .brow { grid-template-columns: 84px minmax(0, 1fr) 40px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .tape .track, .live .h i, .scanner .laser, .bpass { animation: none; } .meter i, .brow .b i { transition: none; } }
+</style></head><body>
+
+<div class="wrap">
+  <div class="bar">
+    <div class="brand"><i></i>BUDITEL Event Agency</div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" aria-selected="true" data-tab="site">Събитието</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="survey">Анкета след събитието</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="admin">Панел на екипа</button>
+    </div>
+  </div>
+
+  <!-- ===================== СЪБИТИЕТО ===================== -->
+  <section id="site" class="tab-page">
+    <div class="hero">
+      <div>
+        <div class="kicker">Хакатон · 3 часа · 100 ученици</div>
+        <h1>Buditel <span>AI</span> Sprint</h1>
+        <p>Три часа, отбори от по 4–5 души и реални проблеми на нашето училище. С помощта на AI превърнете идея в работещо решение и го представете пред жури.</p>
+        <div class="facts"><span>Петък · 14:00–17:00</span><span>Актова зала и компютърни кабинети</span><span>Без нужда от опит</span></div>
+        <div class="count" id="count" aria-label="Оставащо време до старта"></div>
+      </div>
+      <div class="seats">
+        <div class="t">Свободни места</div>
+        <div class="n" id="seatsN">–</div>
+        <div class="meter"><i id="seatsBar"></i></div>
+        <div class="t" id="seatsT"></div>
+        <a class="cta" href="#regform">Запиши се</a>
+        <div class="live"><div class="h"><i></i>НА ЖИВО</div><div class="msg" id="liveMsg"></div></div>
+      </div>
+      <div class="tape" aria-hidden="true"><div class="track" id="tapeTrack"></div></div>
+    </div>
+
+    <div class="program">
+      <div class="seg"><span class="time">14:00</span><h3>Старт</h3><p>Разкриваме реалните проблеми на училището и правим бърз AI урок.</p><span class="dur">30 мин</span></div>
+      <div class="seg mid"><span class="time">14:30</span><h3>Спринтът</h3><p>Отборите създават решение – приложение, автоматизация, кампания или прототип. Ментори обикалят и помагат. Таймерът е на големия екран.</p><span class="dur">100 мин</span></div>
+      <div class="seg"><span class="time">16:10</span><h3>Финал</h3><p>2 минути за всеки отбор, жури и гласуване на публиката с QR код.</p><span class="dur">50 мин</span></div>
+    </div>
+
+    <div class="reg" id="regform">
+      <div class="panel">
+        <div class="prog" id="prog"></div>
+        <div id="wizard"></div>
+      </div>
+      <div class="panel side">
+        <h3>Какво получаваш</h3>
+        <ul>
+          <li>Практика с AI инструменти върху реален проблем</li>
+          <li>Ментори от бранша и обратна връзка от жури</li>
+          <li>Награди за първите три отбора и наградата на публиката</li>
+          <li>Пица, напитки и сертификат за участие</li>
+        </ul>
+        <h3 style="margin-top:18px">Умно разпределение в отбори</h3>
+        <ul>
+          <li>Ако се запишеш сам, системата те слага в отбор, в който липсва точно твоето умение.</li>
+          <li>Така всеки отбор има някой, който пише код, някой с идеи, дизайнер и човек, който да представи.</li>
+        </ul>
+        <h3 style="margin-top:18px">След регистрацията</h3>
+        <ul>
+          <li>Имейл за потвърждение, след това билет с QR код.</li>
+          <li>Напомняне ден преди събитието.</li>
+          <li>На входа сканираме кода – без опашки и списъци.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== АНКЕТА ===================== -->
+  <section id="survey" class="tab-page" hidden>
+    <div class="survey">
+      <div class="panel" id="surveyForm"></div>
+      <div class="panel res" id="surveyRes"></div>
+    </div>
+  </section>
+
+  <!-- ===================== ПАНЕЛ ===================== -->
+  <section id="admin" class="tab-page" hidden>
+    <div class="stats" id="stats"></div>
+    <div class="charts">
+      <div class="panel"><h2 style="font-size:18px">Присъствие</h2><p class="sub">Колко от регистрираните вече са влезли.</p><div class="ring" id="ring"></div></div>
+      <div class="panel"><h2 style="font-size:18px">Регистрации по клас</h2><p class="sub">Помага ни да видим кого не сме достигнали.</p><div class="bars" id="byGrade"></div></div>
+    </div>
+    <div class="admin">
+      <div class="panel">
+        <h2 style="font-size:20px">Регистрации</h2>
+        <p class="sub">Примерни данни плюс регистрациите, които направиш. Пазят се само в твоя браузър.</p>
+        <div class="tools">
+          <input type="text" id="q" placeholder="Търси по име, клас, отбор или код" aria-label="Търсене">
+          <button class="ghost" type="button" id="resetBtn">Върни примерните данни</button>
+        </div>
+        <div class="tablewrap"><table><thead><tr><th>Код</th><th>Име</th><th>Клас</th><th>Отбор</th><th>Статус</th></tr></thead><tbody id="tbody"></tbody></table></div>
+      </div>
+      <div style="display:grid;gap:16px">
+        <div class="panel" style="display:grid;gap:10px">
+          <h2 style="font-size:20px">Чек-ин на входа</h2>
+          <div class="scanner" aria-hidden="true"><div class="frame"></div><div class="laser"></div></div>
+          <form id="scanForm" style="display:flex;gap:8px"><input type="text" id="scanIn" placeholder="Код от билета, напр. AIS-K7Q2" style="flex:1;min-width:0" aria-label="Код от билета"><button class="primary" type="submit">Сканирай</button></form>
+          <p class="note">В реалната система кодът се чете с камерата на телефона.</p>
+          <div id="scanRes" hidden></div>
+        </div>
+        <div class="panel">
+          <h2 style="font-size:20px">Автоматични тестове</h2>
+          <p class="sub">Петте теста от задачата, пуснати върху истинската логика (на временно копие).</p>
+          <button class="btn2" type="button" id="runTests">Пусни тестовете</button>
+          <div class="tests" id="tests" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">Работещ прототип към кандидатурата на Кристиян Димитров, 10.Е клас, за позиция IT в BUDITEL Event Agency. Данните в демото са примерни, пазят се само в браузъра, а имейлите са симулирани. В реалната версия регистрациите и анкетите са в база данни (Supabase), а имейлите се изпращат автоматично.</p>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+// ===================== ДАННИ =====================
+const CAP = 100, TEAM_MAX = 5, KEY = 'buditel-ai-sprint-v2', SKEY = 'buditel-ai-sprint-survey-v2';
+const SKILLS = { code: 'Код', ideas: 'Идеи', design: 'Дизайн', pitch: 'Представяне' };
+const FIRST = ['Мария','Иван','Ния','Георги','Виктория','Александър','Елена','Даниел','Йоана','Мартин','Габриела','Стефан','Ива','Калоян','Деница','Борис','Симона','Петър','Ралица','Тео','Лора','Николай','Анна','Христо','Божидара','Васил','Мила','Радослав','Катерина','Филип'];
+const LAST = ['Иванов','Петрова','Георгиев','Николова','Димитров','Стоянова','Тодоров','Колева','Василев','Маринова','Попов','Ангелова','Христов','Илиева','Костов'];
+const TEAMS = ['Нулев бъг','Prompt Masters','Будители 2.0','Байт & Бит','NeuroNerds','404 Сън','Кофеин.js','Бързи токени','Debug Squad','Пиксел Парти','Синтаксис','Квантови кифли','Null Pointers','Ctrl+Alt+Win','Рекурсия','Лампичките','Gradient Gang','Стек Овърфлоу','Тиха лудост','Бета версия'];
+
+function makeCode(set) { const a = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c; do { c = 'AIS-' + Array.from({ length: 4 }, () => a[Math.floor(Math.random() * a.length)]).join(''); } while (set && set.has(c)); return c; }
+function seed() {
+  const list = [], codes = new Set(), sk = Object.keys(SKILLS);
+  for (let i = 0; i < 94; i++) {
+    const first = FIRST[i % FIRST.length], base = LAST[(i * 7) % LAST.length], female = /[ая]$/.test(first);
+    const last = female && !/а$/.test(base) ? base + 'а' : (!female && /а$/.test(base) ? base.slice(0, -1) : base);
+    const code = makeCode(codes); codes.add(code);
+    const skills = [sk[i % 4]]; if (i % 3 === 0) skills.push(sk[(i + 1) % 4]);
+    list.push({ code, name: `${first} ${last}`, grade: String([10, 9, 11, 10, 8, 12, 11, 10, 9, 11][i % 10]), cls: 'АБВГДЕ'[i % 6], email: `student${i + 1}@example.bg`,
+      team: TEAMS[Math.floor(i / 5) % TEAMS.length], skills, status: i < 61 ? 'checked' : i < 86 ? 'confirmed' : 'pending', example: true, at: Date.now() - (94 - i) * 3.6e5 });
+  }
+  return list;
+}
+const read = (k, f) => { try { const s = JSON.parse(localStorage.getItem(k)); if (s) return s; } catch (e) {} return f(); };
+const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+let DB = read(KEY, seed); if (!Array.isArray(DB) || !DB.length) DB = seed();
+const save = () => write(KEY, DB);
+
+// ===================== ЛОГИКА =====================
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const taken = db => db.filter(r => r.status !== 'wait').length;
+function validate(d) {
+  const e = {};
+  if (!d.name || d.name.trim().split(/\s+/).length < 2) e.name = 'Въведи име и фамилия.';
+  if (!d.grade) e.grade = 'Избери клас.';
+  if (!d.cls) e.cls = 'Избери паралелка.';
+  if (!d.email) e.email = 'Въведи имейл.'; else if (!EMAIL_RE.test(d.email)) e.email = 'Имейлът не изглежда правилен.';
+  if (d.mode === 'team' && !(d.team || '').trim()) e.team = 'Въведи име на отбора.';
+  if (!d.gdpr) e.gdpr = 'Без това съгласие не можем да те регистрираме.';
+  return e;
+}
+function teamMembers(db, t) { return db.filter(r => r.team === t && r.status !== 'wait'); }
+// умно разпределение: отбор с място, в който липсват твоите умения
+function matchTeam(db, skills) {
+  const names = [...new Set(db.map(r => r.team).filter(Boolean))];
+  let best = null, bestScore = -1e9;
+  for (const t of names) {
+    const m = teamMembers(db, t); if (m.length >= TEAM_MAX) continue;
+    const have = new Set(m.flatMap(x => x.skills || []));
+    const fills = skills.filter(s => !have.has(s)).length;
+    const score = fills * 10 - m.length;
+    if (score > bestScore) { bestScore = score; best = t; }
+  }
+  return best || 'Отбор ' + (names.length + 1);
+}
+function register(db, d) {
+  const errors = validate(d);
+  if (Object.keys(errors).length) return { ok: false, errors };
+  const email = d.email.trim().toLowerCase();
+  if (db.some(r => r.email.toLowerCase() === email)) return { ok: false, duplicate: true, errors: { email: 'С този имейл вече има регистрация. Провери пощата си за билета.' } };
+  const full = taken(db) >= CAP, skills = d.skills && d.skills.length ? d.skills : ['ideas'];
+  const team = d.mode === 'team' ? d.team.trim() : (full ? null : matchTeam(db, skills));
+  const rec = { code: makeCode(new Set(db.map(r => r.code))), name: d.name.trim(), grade: d.grade, cls: d.cls, email, team, skills, photo: !!d.photo, status: full ? 'wait' : 'pending', at: Date.now(), matched: d.mode !== 'team' };
+  db.push(rec);
+  return { ok: true, rec, waitlist: full };
+}
+function confirmEmail(db, code) { const r = db.find(x => x.code === code); if (r && r.status === 'pending') r.status = 'confirmed'; return r; }
+function checkIn(db, raw) {
+  const code = raw.trim().toUpperCase(), r = db.find(x => x.code === code);
+  if (!r) return { kind: 'bad', text: `Невалиден код ${code || '(празно)'}. Няма такъв билет.` };
+  if (r.status === 'checked') return { kind: 'warn', text: `${r.name} вече е влязъл/а. Билетът е използван.` };
+  if (r.status === 'wait') return { kind: 'bad', text: `${r.name} е в списъка на чакащите – няма място.` };
+  if (r.status === 'pending') return { kind: 'warn', text: `${r.name} не е потвърдил/а имейла си. Пусни след проверка на ученическа карта.` };
+  r.status = 'checked'; return { kind: 'ok', text: `Добре дошъл/дошла, ${r.name}! ${r.grade}${r.cls} клас · отбор „${r.team}“.` };
+}
+
+// ===================== ОБЩИ =====================
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const initials = n => n.split(' ').map(x => x[0]).join('').slice(0, 2);
+
+// ---------- брояч до старта (следващия петък 14:00) ----------
+const EVENT = (() => { const d = new Date(); d.setHours(14, 0, 0, 0); let add = (5 - d.getDay() + 7) % 7; if (add === 0 && Date.now() > d) add = 7; d.setDate(d.getDate() + add); return d; })();
+function tickCount() {
+  let s = Math.max(0, Math.floor((EVENT - Date.now()) / 1000));
+  const parts = [['дни', Math.floor(s / 86400)], ['часа', Math.floor(s % 86400 / 3600)], ['мин', Math.floor(s % 3600 / 60)], ['сек', s % 60]];
+  $('count').innerHTML = parts.map(([k, v]) => `<div><b>${String(v).padStart(2, '0')}</b><small>${k}</small></div>`).join('');
+}
+// ---------- лента ----------
+$('tapeTrack').innerHTML = Array(2).fill(['ИДЕЯ', 'ОТБОР', 'AI', 'РЕШЕНИЕ', '3 ЧАСА', 'ДЕМО', 'ЖУРИ', 'НАГРАДИ'].map(w => `<span>${w}</span>`).join('')).join('');
+// ---------- „на живо“ ----------
+let liveI = 0;
+function tickLive() {
+  const recent = DB.filter(r => r.status !== 'wait').slice(-12).reverse();
+  if (!recent.length) return;
+  const r = recent[liveI++ % recent.length], mins = Math.max(1, Math.round((Date.now() - r.at) / 60000));
+  const when = mins < 60 ? `преди ${mins} мин` : mins < 1440 ? `преди ${Math.round(mins / 60)} ч` : `преди ${Math.round(mins / 1440)} дни`;
+  const el = $('liveMsg'); el.style.opacity = 0;
+  setTimeout(() => { el.textContent = `${r.name.split(' ')[0]} ${r.name.split(' ')[1][0]}. от ${r.grade}${r.cls} се записа ${when} · отбор „${r.team || 'чакащ'}“`; el.style.opacity = 1; }, 250);
+}
+function renderSeats() {
+  const left = Math.max(0, CAP - taken(DB));
+  $('seatsN').textContent = left;
+  $('seatsBar').style.width = (taken(DB) / CAP * 100) + '%';
+  $('seatsT').textContent = left ? `Записани са ${taken(DB)} от ${CAP} ученици.` : 'Местата свършиха. Запиши се в списъка на чакащите.';
+}
+
+// ===================== РЕГИСТРАЦИЯ (СТЪПКИ) =====================
+const STEPS = ['Ти', 'Отбор', 'Съгласия', 'Билет'];
+let W = { step: 0, d: { name: '', grade: '', cls: '', email: '', mode: 'solo', team: '', skills: [], gdpr: false, photo: false }, rec: null };
+function prog(n) { $('prog').innerHTML = STEPS.map((s, i) => `<div class="${i < n ? 'on' : i === n ? 'now' : ''}"><i></i><small>${i + 1} · ${s}</small></div>`).join(''); }
+function errs(map) { for (const [k, v] of Object.entries(map)) { const el = $('e_' + k); if (el) el.textContent = v || ''; const f = $('f_' + k); if (f) f.classList.toggle('err', !!v); } }
+function collect() {
+  const v = id => ($(id) ? $(id).value : undefined);
+  if ($('f_name')) Object.assign(W.d, { name: v('f_name'), grade: v('f_grade'), cls: v('f_cls'), email: v('f_email') });
+  if ($('f_team')) W.d.team = v('f_team');
+  if ($('f_gdpr')) Object.assign(W.d, { gdpr: $('f_gdpr').checked, photo: $('f_photo').checked });
+}
+function wizard() {
+  const d = W.d, el = $('wizard'); prog(W.step);
+  if (W.step === 0) {
+    el.innerHTML = `<div class="stepq"><p class="q">Кой си ти?</p>
+      <label class="f">Име и фамилия <input type="text" id="f_name" value="${esc(d.name)}" autocomplete="name"><span class="e" id="e_name"></span></label>
+      <div class="row">
+        <label class="f">Клас <select id="f_grade"><option value="">Избери</option>${[8, 9, 10, 11, 12].map(g => `<option ${d.grade == g ? 'selected' : ''}>${g}</option>`).join('')}</select><span class="e" id="e_grade"></span></label>
+        <label class="f">Паралелка <select id="f_cls"><option value="">Избери</option>${'АБВГДЕ'.split('').map(c => `<option ${d.cls === c ? 'selected' : ''}>${c}</option>`).join('')}</select><span class="e" id="e_cls"></span></label>
+      </div>
+      <label class="f">Имейл <small>Тук ще получиш билета си</small><input type="email" id="f_email" value="${esc(d.email)}" autocomplete="email"><span class="e" id="e_email"></span></label>
+      <div class="nav"><span></span><button class="primary" type="button" id="next">Напред</button></div></div>`;
+    $('next').onclick = () => { collect(); const e = validate({ ...d, mode: 'solo', gdpr: true }); errs({ name: e.name, grade: e.grade, cls: e.cls, email: e.email });
+      if (e.name || e.grade || e.cls || e.email) return; if (DB.some(r => r.email.toLowerCase() === d.email.trim().toLowerCase())) { errs({ email: 'С този имейл вече има регистрация. Провери пощата си за билета.' }); return; } W.step = 1; wizard(); };
+  } else if (W.step === 1) {
+    el.innerHTML = `<div class="stepq"><p class="q">Как ще участваш?</p>
+      <div class="cards">
+        <button class="opt" type="button" data-mode="solo" aria-pressed="${d.mode === 'solo'}"><b>Сам</b><span>Системата ще ми намери отбор</span></button>
+        <button class="opt" type="button" data-mode="team" aria-pressed="${d.mode === 'team'}"><b>С отбор</b><span>Вече имаме отбор</span></button>
+      </div>
+      <label class="f" id="teamWrap" ${d.mode === 'team' ? '' : 'hidden'}>Име на отбора <input type="text" id="f_team" value="${esc(d.team)}"><span class="e" id="e_team"></span></label>
+      <div><b style="font-size:14px">В какво си силен?</b> <span class="note">Избери едно или две</span></div>
+      <div class="chips">${Object.entries(SKILLS).map(([k, v]) => `<button class="chip" type="button" data-skill="${k}" aria-pressed="${d.skills.includes(k)}">${v}</button>`).join('')}</div>
+      <span class="e" id="e_skills"></span>
+      <div class="nav"><button class="ghost" type="button" id="back">Назад</button><button class="primary" type="button" id="next">Напред</button></div></div>`;
+    el.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { collect(); d.mode = b.dataset.mode; wizard(); });
+    el.querySelectorAll('[data-skill]').forEach(b => b.onclick = () => { collect(); const k = b.dataset.skill; d.skills = d.skills.includes(k) ? d.skills.filter(x => x !== k) : [...d.skills, k].slice(-2); wizard(); });
+    $('back').onclick = () => { collect(); W.step = 0; wizard(); };
+    $('next').onclick = () => { collect(); const e = {}; if (d.mode === 'team' && !d.team.trim()) e.team = 'Въведи име на отбора.'; if (!d.skills.length) e.skills = 'Избери поне едно умение.'; errs(e); if (Object.keys(e).length) return; W.step = 2; wizard(); };
+  } else if (W.step === 2) {
+    el.innerHTML = `<div class="stepq"><p class="q">Последна проверка</p>
+      <div class="review">
+        <div><span>Име</span><b>${esc(d.name)}</b></div><div><span>Клас</span><b>${d.grade}${d.cls}</b></div>
+        <div><span>Имейл</span><b>${esc(d.email)}</b></div><div><span>Участие</span><b>${d.mode === 'team' ? 'отбор „' + esc(d.team) + '“' : 'сам, търся отбор'}</b></div>
+        <div><span>Умения</span><b>${d.skills.map(s => SKILLS[s]).join(', ')}</b></div>
+      </div>
+      <label class="check"><input type="checkbox" id="f_gdpr" ${d.gdpr ? 'checked' : ''}><span>Съгласен/а съм данните ми да се използват само за организацията на събитието и да бъдат изтрити 30 дни след него.</span></label>
+      <span class="e" id="e_gdpr"></span>
+      <label class="check"><input type="checkbox" id="f_photo" ${d.photo ? 'checked' : ''}><span>Съгласен/а съм да бъда сниман/а по време на събитието (по избор).</span></label>
+      <div class="nav"><button class="ghost" type="button" id="back">Назад</button><button class="primary" type="button" id="next">Регистрирай ме</button></div></div>`;
+    $('back').onclick = () => { collect(); W.step = 1; wizard(); };
+    $('next').onclick = () => {
+      collect(); const res = register(DB, d);
+      if (!res.ok) { errs({ gdpr: res.errors.gdpr }); if (!res.errors.gdpr) { W.step = 0; wizard(); errs(res.errors); } return; }
+      save(); W.rec = res.rec; renderSeats(); renderAdmin();
+      if (res.waitlist) { el.innerHTML = `<div class="stepq"><p class="q">Ти си в списъка на чакащите</p><p class="sub">Всичките ${CAP} места са заети. Ако някой се откаже, ще получиш имейл с билет. Номер: <b>${res.rec.code}</b>.</p><button class="ghost" type="button" onclick="restart()">Нова регистрация</button></div>`; return; }
+      el.innerHTML = `<div class="stepq"><p class="q">Провери пощата си</p><p class="sub" style="margin:0">Изпратихме имейл за потвърждение на <b>${esc(res.rec.email)}</b>.</p>
+        <div class="mail"><span class="h">ДО: ${esc(res.rec.email)} · ОТ: BUDITEL Event Agency</span><b>Потвърди участието си в Buditel AI Sprint</b>
+        <span>Здравей, ${esc(res.rec.name.split(' ')[0])}! Натисни бутона, за да потвърдиш регистрацията и да получиш билета си.</span>
+        <button class="btn2" type="button" id="confirmBtn">Потвърждавам участието</button></div>
+        <p class="note">В демото имейлът е показан тук. В реалната система пристига в пощата ти до минута.</p></div>`;
+      $('confirmBtn').onclick = () => { confirmEmail(DB, W.rec.code); save(); renderAdmin(); W.step = 3; ticket(); };
+    };
+  }
+}
+function ticket() {
+  prog(4); const r = W.rec, mates = teamMembers(DB, r.team).filter(m => m.code !== r.code);
+  const have = new Set([...mates, r].flatMap(x => x.skills || []));
+  $('wizard').innerHTML = `<div class="stepq"><p class="q">Ти си вътре!</p>
+    <div class="bpass" id="pass">
+      <div class="main">
+        <div class="top"><span>BUDITEL <b>AI SPRINT</b></span><span>БИЛЕТ</span></div>
+        <div class="who">${esc(r.name)}</div>
+        <div class="grid"><div><small>Клас</small><b>${r.grade}${r.cls}</b></div><div><small>Час</small><b>14:00</b></div><div><small>Вход</small><b>Актова зала</b></div></div>
+        <div class="grid"><div style="grid-column:span 2"><small>Отбор</small><b>${esc(r.team)}</b></div><div><small>Ден</small><b>Петък</b></div></div>
+      </div>
+      <div class="stub"><div class="qr" id="qrBox">${r.code}</div><div class="code">${r.code}</div></div>
+    </div>
+    <div class="team">
+      <div class="h"><b>Твоят отбор: ${esc(r.team)}</b><small>${r.matched ? 'РАЗПРЕДЕЛЕН АВТОМАТИЧНО' : 'ТВОЯТ ОТБОР'}</small></div>
+      <div class="mates">${[r, ...mates].map((m, i) => `<span class="mate ${i === 0 ? 'me' : ''}"><i>${initials(m.name)}</i>${i === 0 ? 'Ти' : esc(m.name.split(' ')[0])} · ${(m.skills || []).map(s => SKILLS[s]).join(', ')}</span>`).join('')}</div>
+      <div class="cover">${Object.entries(SKILLS).map(([k, v]) => `<div class="${have.has(k) ? 'y' : ''}">${have.has(k) ? '✓' : '–'} ${v}</div>`).join('')}</div>
+      <p class="note">${r.matched ? 'Избрахме отбор, в който твоите умения допълват останалите.' : 'Ако съотборниците ти се запишат със същото име на отбора, ще ги видиш тук.'}</p>
+    </div>
+    <p class="note">Опитай: отвори „Панел на екипа“ и въведи кода в чек-ина.</p>
+    <button class="ghost" type="button" onclick="restart()" style="justify-self:start">Нова регистрация</button></div>`;
+  drawQR($('qrBox'), r.code);
+  const p = $('pass');
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    p.addEventListener('mousemove', e => { const b = p.getBoundingClientRect(), x = (e.clientX - b.left) / b.width - .5, y = (e.clientY - b.top) / b.height - .5; p.style.transform = `perspective(700px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg)`; });
+    p.addEventListener('mouseleave', () => { p.style.transform = ''; });
+  }
+}
+function drawQR(box, text) { try { if (typeof qrcode !== 'function') return; const q = qrcode(0, 'M'); q.addData(text); q.make(); box.innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); } catch (e) {} }
+window.restart = () => { W = { step: 0, d: { name: '', grade: '', cls: '', email: '', mode: 'solo', team: '', skills: [], gdpr: false, photo: false }, rec: null }; wizard(); };
+
+// ===================== АНКЕТА =====================
+const SQ = [
+  { id: 'overall', q: 'Как оценяваш събитието като цяло?', type: 'scale', labels: ['Слабо', '', 'Добре', '', 'Супер'] },
+  { id: 'ai', q: 'Колко полезна ти беше работата с AI?', type: 'scale', labels: ['Никак', '', 'Донякъде', '', 'Много'] },
+  { id: 'best', q: 'Кое ти хареса най-много?', type: 'multi', opts: ['Спринтът', 'AI урокът', 'Менторите', 'Финалът', 'Отборът ми', 'Храната'] },
+  { id: 'again', q: 'Би ли дошъл/дошла пак?', type: 'one', opts: ['Да, със сигурност', 'Може би', 'Не'] },
+  { id: 'better', q: 'Какво да подобрим следващия път?', type: 'text' },
+];
+function seedSurvey() {
+  const out = [], best = SQ[2].opts;
+  for (let i = 0; i < 58; i++) out.push({ overall: [5, 5, 4, 5, 4, 3, 5, 4][i % 8], ai: [5, 4, 4, 5, 3, 4, 5, 2][i % 8], best: [best[i % 6], best[(i * 3 + 1) % 6]].filter((v, k, a) => a.indexOf(v) === k), again: ['Да, със сигурност', 'Да, със сигурност', 'Може би', 'Да, със сигурност', 'Не'][i % 5], better: '', example: true });
+  out[3].better = 'Повече време за спринта!'; out[11].better = 'По-силен интернет в кабинет 2.'; out[19].better = 'Искам и втори кръг с менторите.';
+  return out;
+}
+let SV = read(SKEY, seedSurvey); if (!Array.isArray(SV) || !SV.length) SV = seedSurvey();
+let A = { best: [] }, submitted = false;
+function surveyForm() {
+  if (submitted) { $('surveyForm').innerHTML = `<h2>Благодарим ти!</h2><p class="sub">Отговорът ти вече е в резултатите вдясно. Отбелязан е в черно-жълто.</p><button class="ghost" type="button" id="againBtn">Попълни отново (за демото)</button>`; $('againBtn').onclick = () => { submitted = false; A = { best: [] }; surveyForm(); renderResults(); }; return; }
+  $('surveyForm').innerHTML = `<h2>Как мина?</h2><p class="sub">Пет въпроса, около 40 секунди. Анкетата идва автоматично по имейл час след края.</p>
+    ${SQ.map(s => `<div class="sq"><b>${s.q}</b>${
+      s.type === 'scale' ? `<div class="scale">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-q="${s.id}" data-v="${n}" aria-pressed="${A[s.id] === n}"><b>${n}</b><span>${s.labels[n - 1] || '&nbsp;'}</span></button>`).join('')}</div>`
+      : s.type === 'multi' ? `<div class="chips">${s.opts.map(o => `<button class="chip" type="button" data-q="best" data-v="${o}" aria-pressed="${A.best.includes(o)}">${o}</button>`).join('')}</div>`
+      : s.type === 'one' ? `<div class="chips">${s.opts.map(o => `<button class="chip" type="button" data-q="${s.id}" data-v="${o}" aria-pressed="${A[s.id] === o}">${o}</button>`).join('')}</div>`
+      : `<textarea id="sv_better" rows="2" placeholder="По желание">${esc(A.better || '')}</textarea>`}</div>`).join('')}
+    <span class="e" id="e_survey"></span>
+    <div class="nav"><span></span><button class="primary" type="button" id="svSend">Изпрати</button></div>`;
+  $('surveyForm').querySelectorAll('[data-q]').forEach(b => b.onclick = () => {
+    A.better = ($('sv_better') || {}).value || A.better;
+    const q = b.dataset.q, v = isNaN(b.dataset.v) ? b.dataset.v : +b.dataset.v;
+    if (q === 'best') A.best = A.best.includes(v) ? A.best.filter(x => x !== v) : [...A.best, v]; else A[q] = v;
+    surveyForm();
+  });
+  $('svSend').onclick = () => {
+    A.better = $('sv_better').value.trim();
+    if (!A.overall || !A.ai || !A.again) { $('e_survey').textContent = 'Отговори на въпросите с оценка и на „Би ли дошъл пак?“.'; return; }
+    SV.push({ ...A, you: true }); write(SKEY, SV); submitted = true; surveyForm(); renderResults();
+  };
+}
+function renderResults() {
+  const n = SV.length, mine = submitted ? SV[SV.length - 1] : null;
+  const avg = k => (SV.reduce((s, r) => s + r[k], 0) / n).toFixed(1).replace('.', ',');
+  const dist = k => [5, 4, 3, 2, 1].map(v => [v, SV.filter(r => r[k] === v).length]);
+  const bestCount = SQ[2].opts.map(o => [o, SV.filter(r => (r.best || []).includes(o)).length]).sort((a, b) => b[1] - a[1]);
+  const againYes = Math.round(SV.filter(r => r.again === 'Да, със сигурност').length / n * 100);
+  const bars = (rows, max, youVal, fmt = v => v) => rows.map(([k, v]) => `<div class="brow ${youVal !== undefined && (Array.isArray(youVal) ? youVal.includes(k) : youVal === k) ? 'you' : ''}" data-tip="${fmt(k)}: ${v} ${v === 1 ? 'отговор' : 'отговора'} (${Math.round(v / n * 100)}%)"><span>${fmt(k)}</span><div class="b"><i style="width:${v / max * 100}%"></i></div><span class="v">${v}</span></div>`).join('');
+  const d1 = dist('overall'), maxD = Math.max(...d1.map(x => x[1]));
+  const quotes = SV.filter(r => r.better).slice(-3).reverse();
+  $('surveyRes').innerHTML = `<div><h2>Резултати на живо</h2><p class="sub" style="margin:0">${n} отговора${mine ? ', включително твоя' : ''}. Примерни данни за демото.</p></div>
+    <div class="big"><b>${avg('overall')}</b><span>от 5 · обща оценка</span></div>
+    <div class="bars">${bars(d1, maxD, mine ? mine.overall : undefined, v => '★'.repeat(v))}</div>
+    <div class="big" style="gap:24px"><div><b style="font-size:40px">${avg('ai')}</b><span> полезност на AI</span></div><div><b style="font-size:40px">${againYes}%</b><span> биха дошли пак</span></div></div>
+    <div><b style="font-size:14px">Най-харесвано</b><div class="bars" style="margin-top:8px">${bars(bestCount, bestCount[0][1], mine ? mine.best : undefined)}</div></div>
+    ${quotes.length ? `<div style="display:grid;gap:8px"><b style="font-size:14px">Какво да подобрим</b>${quotes.map(q => `<div class="quote">${esc(q.better)}</div>`).join('')}</div>` : ''}`;
+}
+
+// ===================== ПАНЕЛ =====================
+const LABEL = { pending: ['Чака потвърждение', 'p-pending'], confirmed: ['Потвърден', 'p-confirmed'], checked: ['Влязъл', 'p-checked'], wait: ['Чакащ', 'p-wait'] };
+function renderAdmin() {
+  const c = s => DB.filter(r => r.status === s).length, reg = taken(DB), inn = c('checked');
+  const stats = [['Регистрирани', reg], ['Потвърдени', c('confirmed') + inn], ['Влезли', inn], ['Чакат потвърждение', c('pending')], ['Чакащи за място', c('wait')]];
+  $('stats').innerHTML = stats.map(([k, v]) => `<div class="stat"><b>${v}</b><small>${k}</small></div>`).join('');
+  const pct = reg ? inn / reg : 0, R = 46, C = 2 * Math.PI * R;
+  $('ring').innerHTML = `<svg viewBox="0 0 112 112" role="img" aria-label="Влезли ${Math.round(pct * 100)}%"><circle cx="56" cy="56" r="${R}" fill="none" stroke="var(--paper)" stroke-width="12"/><circle cx="56" cy="56" r="${R}" fill="none" stroke="var(--cobalt)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C * pct} ${C}" transform="rotate(-90 56 56)"/><text x="56" y="62" text-anchor="middle" font-family="Rubik, sans-serif" font-weight="800" font-size="22" fill="var(--ink)">${Math.round(pct * 100)}%</text></svg>
+    <div style="display:grid;gap:4px;font-size:14px"><span><b>${inn}</b> влезли</span><span><b>${reg - inn}</b> още не са дошли</span><span class="note">Обновява се при всеки чек-ин.</span></div>`;
+  const g = [8, 9, 10, 11, 12].map(x => [x + ' клас', DB.filter(r => r.status !== 'wait' && +r.grade === x).length]), mx = Math.max(1, ...g.map(x => x[1]));
+  $('byGrade').innerHTML = g.map(([k, v]) => `<div class="brow" data-tip="${k}: ${v} регистрирани"><span>${k}</span><div class="b"><i style="width:${v / mx * 100}%"></i></div><span class="v">${v}</span></div>`).join('');
+  const q = ($('q').value || '').toLowerCase();
+  const rows = DB.slice().reverse().filter(r => !q || `${r.name} ${r.grade}${r.cls} ${r.code} ${r.team}`.toLowerCase().includes(q));
+  $('tbody').innerHTML = rows.map(r => `<tr><td class="mono">${r.code}</td><td>${esc(r.name)}${r.example ? '' : ' <span class="pill p-confirmed">нов</span>'}</td><td>${r.grade}${r.cls}</td><td>${esc(r.team || '–')}</td><td><span class="pill ${LABEL[r.status][1]}">${LABEL[r.status][0]}</span></td></tr>`).join('');
+}
+$('q').addEventListener('input', renderAdmin);
+$('resetBtn').onclick = () => { DB = seed(); save(); SV = seedSurvey(); write(SKEY, SV); submitted = false; renderAdmin(); renderSeats(); renderResults(); surveyForm(); $('scanRes').hidden = true; };
+$('scanForm').addEventListener('submit', e => { e.preventDefault(); const res = checkIn(DB, $('scanIn').value); save(); renderAdmin(); $('scanRes').hidden = false; $('scanRes').className = 'scanres ' + res.kind; $('scanRes').textContent = res.text; $('scanIn').select(); });
+
+// ---------- 5-те теста ----------
+$('runTests').onclick = () => {
+  const base = { name: 'Тест Тестов', grade: '10', cls: 'Е', email: 'test@buditel.bg', mode: 'solo', team: '', skills: ['code'], gdpr: true, photo: false };
+  const copy = () => JSON.parse(JSON.stringify(DB.filter(r => r.status !== 'wait').slice(0, 50)));
+  const T = [];
+  let db = copy(), r = register(db, base); confirmEmail(db, r.rec && r.rec.code);
+  T.push(['Валидна регистрация', 'Записът се създава, статусът минава „чака“ → „потвърден“, генерира се уникален код и отбор.', r.ok && db.find(x => x.code === r.rec.code).status === 'confirmed' && /^AIS-[A-Z0-9]{4}$/.test(r.rec.code) && !!r.rec.team]);
+  db = copy(); const n0 = db.length; r = register(db, { ...base, email: 'test@@buditel', name: 'Тест' });
+  T.push(['Невалидни данни', 'Грешен имейл и непълно име връщат грешки и не създават запис.', !r.ok && r.errors.email && r.errors.name && db.length === n0]);
+  db = copy(); register(db, base); const n1 = db.length; r = register(db, { ...base, email: 'TEST@buditel.bg' });
+  T.push(['Дублирана регистрация', 'Същият имейл, дори с главни букви, не се записва втори път.', !r.ok && r.duplicate && db.length === n1]);
+  db = copy(); let i = 0; while (taken(db) < CAP) register(db, { ...base, email: `fill${i++}@buditel.bg` });
+  r = register(db, { ...base, email: 'late@buditel.bg' });
+  T.push(['Пълен капацитет', `Регистрация №${CAP + 1} отива в списъка на чакащите.`, r.ok && r.waitlist && taken(db) === CAP]);
+  db = copy(); r = register(db, base); confirmEmail(db, r.rec.code);
+  const a = checkIn(db, r.rec.code.toLowerCase()), b = checkIn(db, r.rec.code), c = checkIn(db, 'AIS-0000');
+  T.push(['Чек-ин с QR код', 'Валиден код пуска, повторно сканиране предупреждава, невалиден се отказва.', a.kind === 'ok' && b.kind === 'warn' && c.kind === 'bad']);
+  $('tests').innerHTML = T.map(([t, d, ok], k) => `<div class="test"><span class="r ${ok ? 'pass' : 'fail'}">${ok ? 'PASS' : 'FAIL'}</span><div><b>${k + 1}. ${t}</b><small>${d}</small></div></div>`).join('');
+};
+
+// ---------- tooltip за баровете ----------
+document.addEventListener('mousemove', e => { const t = e.target.closest('[data-tip]'), tip = $('tip'); if (!t) { tip.hidden = true; return; } tip.hidden = false; tip.textContent = t.dataset.tip; tip.style.left = Math.min(innerWidth - tip.offsetWidth - 8, e.clientX + 12) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; });
+
+// ---------- табове ----------
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-tab]').forEach(x => x.setAttribute('aria-selected', x === b));
+  ['site', 'survey', 'admin'].forEach(id => $(id).hidden = b.dataset.tab !== id);
+  if (b.dataset.tab === 'admin') renderAdmin();
+  if (b.dataset.tab === 'survey') renderResults();
+}));
+
+tickCount(); setInterval(tickCount, 1000);
+renderSeats(); tickLive(); setInterval(tickLive, 4000);
+wizard(); surveyForm(); renderResults(); renderAdmin();
+</script>
+</body></html>
